@@ -1,0 +1,23 @@
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cloudflare Wrangler local cache
+.wrangler/
+
+# Node (just in case)
+node_modules/
+
+# Temp
+*.log
+*.tmp
+
+# Working notes (never publish)
+.opencode/
