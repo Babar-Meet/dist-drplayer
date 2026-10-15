@@ -91,8 +91,9 @@ download page.
 ## About this repo
 
 This is the public distribution channel: the download page and the published
-releases. Application source lives in the private Dr.Player repo and is not
-published here.
+releases. Application source is public at
+[github.com/Babar-Meet/Dr.Player](https://github.com/Babar-Meet/Dr.Player);
+only the page-plus-releases pattern mirrors PDEA-dist.
 
 The landing page is a single hand-written `index.html` with no build step. Its
 design system and the rules for editing it are in [DESIGN.md](DESIGN.md) — read
