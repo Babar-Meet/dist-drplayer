@@ -419,6 +419,21 @@ a.btn[aria-disabled="true"]:hover .btn__note { color: var(--text-2); }
 
 .vdetail__empty { font-size: 14px; color: var(--text-3); padding-top: 20px; }
 
+.vmd { display: flex; flex-direction: column; gap: 10px; padding-top: 20px; font-family: var(--body); }
+.vmd-p { font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
+.vmd-h { font-family: var(--display); font-size: 14px; letter-spacing: -0.01em; line-height: 1.35; color: var(--text); margin-top: 8px; }
+.vmd-h--3 { font-size: 13px; }
+.vmd-p strong, .vmd-ul li strong, .vmd-ol li strong, .vmd-h strong { color: var(--text); font-weight: 600; }
+.vmd-ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.vmd-ul li { position: relative; padding-left: 17px; font-size: 14.5px; line-height: 1.55; color: var(--text-2); }
+.vmd-ul li::before { content: ""; position: absolute; left: 0; top: 9px; width: 7px; height: 7px; background: var(--black); }
+.vmd-ol { list-style: none; counter-reset: vmd; display: flex; flex-direction: column; gap: 7px; }
+.vmd-ol li { position: relative; counter-increment: vmd; padding-left: 26px; font-size: 14.5px; line-height: 1.55; color: var(--text-2); }
+.vmd-ol li::before { content: counter(vmd) "."; position: absolute; left: 0; top: 1px; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); }
+.vmd-code { font-family: var(--mono); font-size: 12.5px; background: var(--surface); border: 1px solid var(--rule); padding: 1px 5px; color: var(--text); }
+.vmd a { color: var(--text); border-bottom: 2px solid var(--rule); font-weight: 500; }
+.vmd a:hover { border-color: var(--red); color: var(--red); }
+
 /* ══ skeleton rows ══
    Static placeholders so first paint is instant with zero JS. Grey
    blocks only: no red, no wash beyond a subtle pulse. */
@@ -909,10 +924,71 @@ a.btn[aria-disabled="true"]:hover .btn__note { color: var(--text-2); }
     return hits[0];
   }
 
-  function snippetText(b) {
-    var t = String(b || "").replace(/\s+/g, " ").trim();
-    if (t.length > 300) t = t.slice(0, 300).trim() + "…";
+  /* escape-first markdown subset: esc() before any formatting, so raw
+     API strings never become HTML. Blocks: ##/### headings, - and
+     1. lists, paragraphs. Inline: `code`, [text](http/https), **bold**,
+     *italic*. Code spans are parked before other inline transforms so
+     ** and * inside code stay literal. */
+  function mdInline(t) {
+    var codes = [];
+    t = t.replace(/`([^`\n]+)`/g, function (m, g) {
+      codes.push(g);
+      return "\u0001" + (codes.length - 1) + "\u0001";
+    });
+    t = t.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()]*\))+)\)/g, function (m, txt, href) {
+      var dec = href.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      if (!/^https?:\/\//i.test(dec)) return txt;
+      return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + txt + "</a>";
+    });
+    t = t.replace(/\*\*([^*`\n]+)\*\*/g, "<strong>$1</strong>");
+    t = t.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+    t = t.replace(/\u0001(\d+)\u0001/g, function (m, i) {
+      return '<code class="vmd-code">' + codes[+i] + "</code>";
+    });
     return t;
+  }
+
+  function mdBody(src) {
+    var raw = String(src || "").replace(/\r\n?/g, "\n");
+    if (!raw.trim()) return "";
+    var lines = esc(raw).split("\n");
+    var html = "";
+    var ulOpen = false;
+    var olOpen = false;
+    function closeLists() {
+      if (ulOpen) { html += "</ul>"; ulOpen = false; }
+      if (olOpen) { html += "</ol>"; olOpen = false; }
+    }
+    for (var i = 0; i < lines.length; i++) {
+      var trim = lines[i].trim();
+      if (!trim) { closeLists(); continue; }
+      var h = trim.match(/^#{1,3}\s+(.+)$/);
+      if (h) {
+        closeLists();
+        var sub = /^###\s/.test(trim);
+        html += sub ? '<h4 class="vmd-h vmd-h--3">' + mdInline(h[1]) + "</h4>"
+          : '<h4 class="vmd-h">' + mdInline(h[1]) + "</h4>";
+        continue;
+      }
+      var ul = trim.match(/^(?:-|\*)\s+(.+)$/);
+      if (ul) {
+        if (olOpen) { html += "</ol>"; olOpen = false; }
+        if (!ulOpen) { html += '<ul class="vmd-ul">'; ulOpen = true; }
+        html += "<li>" + mdInline(ul[1]) + "</li>";
+        continue;
+      }
+      var ol = trim.match(/^\d+\.\s+(.+)$/);
+      if (ol) {
+        if (ulOpen) { html += "</ul>"; ulOpen = false; }
+        if (!olOpen) { html += '<ol class="vmd-ol">'; olOpen = true; }
+        html += "<li>" + mdInline(ol[1]) + "</li>";
+        continue;
+      }
+      closeLists();
+      html += '<p class="vmd-p">' + mdInline(trim) + "</p>";
+    }
+    closeLists();
+    return html;
   }
 
   /* one panel per row, wired to its button */
@@ -1016,12 +1092,12 @@ a.btn[aria-disabled="true"]:hover .btn__note { color: var(--text-2); }
         dl += '<span class="chip chip--off" aria-disabled="true">Not shipped</span>';
       }
 
-      var snip = snippetText(r.body);
+      var mdHtml = mdBody(r.body);
       var pageUrl = esc(r.html_url || (RELEASES + "/tag/" + tag));
       var pageLink = '<p class="vdetail__empty">Full details for this version are on the ' +
         '<a href="' + pageUrl + '" target="_blank" rel="noopener noreferrer">release page</a>.</p>';
-      var detail = snip
-        ? '<ul class="vdetail__list"><li>' + esc(snip) + "</li></ul>" + pageLink
+      var detail = mdHtml
+        ? '<div class="vmd">' + mdHtml + "</div>" + pageLink
         : pageLink;
 
       return '<div class="vrow">'
