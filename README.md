@@ -11,7 +11,7 @@ newest published release)
 
 ## Download
 
-- **[Installer](https://github.com/Babar-Meet/Dr.Player/releases/latest/download/DrPlayer-Setup.exe)**
+- **[Installer (Setup)](https://github.com/Babar-Meet/Dr.Player/releases/latest/download/DrPlayer-Setup.exe)**
   Installs per user. No administrator rights needed. Puts Dr.Player in the
   Open with menu for `.mp4`, `.m4v`, `.mov` and `.webm`.
 - **[Standalone](https://github.com/Babar-Meet/Dr.Player/releases/latest/download/dr-player-3.2.0.exe)**

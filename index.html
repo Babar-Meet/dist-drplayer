@@ -1085,7 +1085,7 @@ a.btn[aria-disabled="true"]:hover .btn__note { color: var(--text-2); }
       /* every row renders exactly two fixed slots in the same order:
          INSTALLER slot then STANDALONE slot. A missing asset is a
          same-size grey non-link placeholder, never a long sentence. */
-      if (setup && setup.browser_download_url) dl += '<a class="chip" href="' + esc(setup.browser_download_url) + '">Installer</a>';
+      if (setup && setup.browser_download_url) dl += '<a class="chip" href="' + esc(setup.browser_download_url) + '">Installer (Setup)</a>';
       else dl += '<span class="chip chip--off" aria-disabled="true">Not shipped</span>';
       if (standalone && standalone.browser_download_url) {
         dl += '<a class="chip" href="' + esc(standalone.browser_download_url) + '">Standalone</a>';
